@@ -60,7 +60,7 @@ export async function GET() {
       
       return {
         ...item,
-        id: item.service, // Map service parameter as 'id' for frontend consistency
+        id: item.id || item.service, // Use 'id' from new documentation, fallback to 'service'
         rate: newRate,
         network
       };

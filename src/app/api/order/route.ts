@@ -25,14 +25,17 @@ export async function POST(req: Request) {
        return NextResponse.json({ error: "Error conectando a los servicios de red. Intenta más tarde." }, { status: 500 });
     }
 
-    const officialService = top4smmServices.find((s: any) => s.service === serviceId);
+    const officialService = top4smmServices.find((s: any) => String(s.id) === String(serviceId));
     if (!officialService) {
        return NextResponse.json({ error: "Este servicio ya no existe o está en mantenimiento" }, { status: 400 });
     }
 
-    // 2. Validación CRÍTICA de Mínimos/Máximos
-    if (quantity < Number(officialService.min) || quantity > Number(officialService.max)) {
-       return NextResponse.json({ error: `La cantidad debe estar entre ${officialService.min} y ${officialService.max}` }, { status: 400 });
+    // 2. Validación CRÍTICA de Mínimos/Máximos - Según doc oficial: min_order, max_order
+    const minOrder = Number(officialService.min_order || officialService.min);
+    const maxOrder = Number(officialService.max_order || officialService.max);
+
+    if (quantity < minOrder || quantity > maxOrder) {
+       return NextResponse.json({ error: `La cantidad debe estar entre ${minOrder} y ${maxOrder}` }, { status: 400 });
     }
 
     // 4. Bloqueo de Seguridad en Base de datos (Buscar Saldo Real)
@@ -73,24 +76,30 @@ export async function POST(req: Request) {
         });
 
         // C) Ejecutar la API OFICIAL de Top4Smm enviando la orden real
-        // Parámetros exigidos por su API (action=add, service, link, quantity)
+        // Según doc oficial: act=new_order, service_id, count, link
         const orderReq = await fetch("https://top4smm.com/api.php", {
             method: "POST",
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                key: apiKey || "",
-               action: "add",
-               service: serviceId.toString(),
+               act: "new_order",
+               service_id: serviceId.toString(),
                link: link,
-               quantity: quantity.toString()
+               count: quantity.toString()
             }).toString()
         });
         
         const orderRes = await orderReq.json();
 
-        // Si Top4smm marca un error interno (ej: tú te quedaste sin dinero allá)
+        // Según doc oficial: si éxito -> { res: { status: 'ok', order_id: '...' } }
+        // Si error -> { error: { error_message: '...' } }
         if (orderRes.error) {
-            throw new Error(`Top4SMM Rechazó: ${orderRes.error}`);
+            const msg = orderRes.error.error_message || "Error desconocido en la API oficial";
+            throw new Error(`Top4SMM: ${msg}`);
+        }
+
+        if (!orderRes.res || orderRes.res.status !== "ok") {
+            throw new Error("La API no devolvió un estado OK");
         }
 
         // Actualizamos nuestra orden con su Número Oficial e iniciamos ciclo de vida
@@ -98,7 +107,7 @@ export async function POST(req: Request) {
             where: { id: order.id },
             data: { 
                status: "Processing",
-               top4smmOrderId: orderRes.order ? String(orderRes.order) : null
+               top4smmOrderId: orderRes.res.order_id ? String(orderRes.res.order_id) : null
             }
         });
     });
