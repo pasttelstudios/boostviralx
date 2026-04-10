@@ -40,8 +40,8 @@ export const authOptions: AuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
-        token.balance = user.balance;
+        token.role = (user as any).role;
+        token.balance = (user as any).balance;
       }
       return token;
     },
