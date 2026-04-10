@@ -60,6 +60,7 @@ export async function GET() {
       
       return {
         ...item,
+        id: item.service, // Map service parameter as 'id' for frontend consistency
         rate: newRate,
         network
       };
