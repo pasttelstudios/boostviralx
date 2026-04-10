@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../lib/auth";
-import prisma from "../../../lib/prisma";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -13,7 +13,7 @@ export async function GET() {
 
   const apiKey = process.env.TOP4SMM_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "Missing API Key" }, { status: 500 });
+    return NextResponse.json({ error: "Configuración del sistema incompleta." }, { status: 500 });
   }
 
   try {
@@ -22,24 +22,21 @@ export async function GET() {
     });
     
     if (!res.ok) {
-      throw new Error("Failed to fetch services");
+      throw new Error("Fallo en la conexión con el servidor de servicios.");
     }
 
     const data = await res.json();
     
     if (!Array.isArray(data)) {
-       console.error("Unexpected Top4SMM API response:", data);
-       return NextResponse.json({ error: "API Response is not an array", data }, { status: 500 });
+       console.error("Unexpected response format:", data);
+       return NextResponse.json({ error: "El centro de procesamiento devolvió un formato incompatible." }, { status: 500 });
     }
 
     // Parse data y aplicar +20% a cada rate
     const services = data.map((item: any) => {
-      // Remover rastros de top4smm si hubieran en las descripciones
-      // Aplicar 20% para usuarios normales, 0% (costo real) para VIP
       const multiplier = isVip ? 1.00 : 1.20;
       const newRate = (parseFloat(item.rate) * multiplier).toFixed(4);
       
-      // Intentar extraer la Red Social del nombre de categoría o nombre (ej: "Instagram Views" -> "Instagram")
       let network = "Other";
       const catUpper = (item.category || "").toUpperCase();
       const nameUpper = (item.name || "").toUpperCase();
@@ -60,7 +57,7 @@ export async function GET() {
       
       return {
         ...item,
-        id: item.id || item.service, // Use 'id' from new documentation, fallback to 'service'
+        id: item.id || item.service, 
         rate: newRate,
         network
       };
@@ -69,6 +66,6 @@ export async function GET() {
     return NextResponse.json(services);
   } catch (error: any) {
     console.error("Fetch Exception:", error);
-    return NextResponse.json({ error: error.message || "No se pudieron obtener los servicios" }, { status: 500 });
+    return NextResponse.json({ error: "No se pudieron sincronizar los servicios disponibles." }, { status: 500 });
   }
 }

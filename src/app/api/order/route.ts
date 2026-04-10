@@ -13,47 +13,47 @@ export async function POST(req: Request) {
     const { serviceId, link, quantity } = await req.json();
 
     if (!serviceId || !link || !quantity || quantity <= 0) {
-      return NextResponse.json({ error: "Faltan datos del pedido o cantidad es inválida" }, { status: 400 });
+      return NextResponse.json({ error: "Información de solicitud incompleta. Por favor, revisa los campos." }, { status: 400 });
     }
 
-    // 1. Obtener listado sagrado de precios oficial usando la Llave API secreta
+    // 1. Obtener listado sagrado de precios oficial
     const apiKey = process.env.TOP4SMM_API_KEY;
-    const fetchTop4smmServices = await fetch(`https://top4smm.com/api.php?key=${apiKey}&act=services`, { cache: "no-store" });
-    const top4smmServices = await fetchTop4smmServices.json();
+    const fetchServices = await fetch(`https://top4smm.com/api.php?key=${apiKey}&act=services`, { cache: "no-store" });
+    const services = await fetchServices.json();
 
-    if (!Array.isArray(top4smmServices)) {
-       return NextResponse.json({ error: "Error conectando a los servicios de red. Intenta más tarde." }, { status: 500 });
+    if (!Array.isArray(services)) {
+       return NextResponse.json({ error: "Incapacidad temporal para conectar con el centro de procesamiento." }, { status: 500 });
     }
 
-    const officialService = top4smmServices.find((s: any) => String(s.id) === String(serviceId));
+    const officialService = services.find((s: any) => String(s.id) === String(serviceId));
     if (!officialService) {
-       return NextResponse.json({ error: "Este servicio ya no existe o está en mantenimiento" }, { status: 400 });
+       return NextResponse.json({ error: "El servicio seleccionado se encuentra en mantenimiento técnico o no está disponible." }, { status: 400 });
     }
 
-    // 2. Validación CRÍTICA de Mínimos/Máximos - Según doc oficial: min_order, max_order
+    // 2. Validación CRÍTICA de Mínimos/Máximos
     const minOrder = Number(officialService.min_order || officialService.min);
     const maxOrder = Number(officialService.max_order || officialService.max);
 
     if (quantity < minOrder || quantity > maxOrder) {
-       return NextResponse.json({ error: `La cantidad debe estar entre ${minOrder} y ${maxOrder}` }, { status: 400 });
+       return NextResponse.json({ error: `La cantidad solicitada debe estar entre ${minOrder} y ${maxOrder}` }, { status: 400 });
     }
 
-    // 4. Bloqueo de Seguridad en Base de datos (Buscar Saldo Real)
+    // 4. Bloqueo de Seguridad en Base de datos
     const userDb = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!userDb) {
-      return NextResponse.json({ error: "Usuario no encontrado en base de datos" }, { status: 404 });
+      return NextResponse.json({ error: "Datos de usuario no encontrados." }, { status: 404 });
     }
 
     // 3. Cálculos matemáticos Inalterables
     const officialRate = parseFloat(officialService.rate);
-    const boostRate = userDb.isVip ? officialRate : (officialRate * 1.20); // VIPs Get raw rate
+    const boostRate = userDb.isVip ? officialRate : (officialRate * 1.20);
     const totalToCharge = (boostRate / 1000) * quantity;
 
     if (userDb.balance < totalToCharge) {
-      return NextResponse.json({ error: `Saldo insuficiente. Tu pedido cuesta $${totalToCharge.toFixed(2)} pero tienes $${userDb.balance.toFixed(2)}` }, { status: 402 });
+      return NextResponse.json({ error: `Fondos insuficientes para procesar esta solicitud. Requieres $${totalToCharge.toFixed(2)} y dispones de $${userDb.balance.toFixed(2)}` }, { status: 402 });
     }
 
-    // 5. Transacción Nuclear (Se resta saldo y se compra todo como un Átomo indivisible)
+    // 5. Transacción Nuclear
     const transaction = await prisma.$transaction(async (tx) => {
         // A) Restar y cobrar al cliente
         const updatedUser = await tx.user.update({
@@ -75,18 +75,19 @@ export async function POST(req: Request) {
             }
         });
 
-        // C) Ejecutar la API OFICIAL de Top4Smm enviando la orden real
-        // Según doc oficial: act=new_order, service_id, count, link
-        const orderReq = await fetch("https://top4smm.com/api.php", {
-            method: "POST",
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-               key: apiKey || "",
-               act: "new_order",
-               service_id: serviceId.toString(),
-               link: link,
-               count: quantity.toString()
-            }).toString()
+        // C) Ejecutar la sincronización con el centro de procesamiento
+        // Usamos GET con parámetros de consulta según la documentación oficial del centro
+        const queryParams = new URLSearchParams({
+           key: apiKey || "",
+           act: "new_order",
+           service_id: serviceId.toString(),
+           link: link,
+           count: quantity.toString()
+        });
+
+        const orderReq = await fetch(`https://top4smm.com/api.php?${queryParams.toString()}`, {
+            method: "GET",
+            cache: "no-store"
         });
         
         const rawResponse = await orderReq.text();
@@ -94,22 +95,20 @@ export async function POST(req: Request) {
         try {
             orderRes = JSON.parse(rawResponse);
         } catch (e) {
-            console.error("Top4SMM malformed response:", rawResponse);
-            throw new Error("La API oficial respondió algo inesperado (no es JSON). Por favor contacta a soporte técnico.");
+            console.error("Order processing sync failure:", rawResponse);
+            throw new Error("Error de sincronización en el procesamiento interno. Por favor, contacta a soporte para verificar tu solicitud.");
         }
 
-        // Según doc oficial: si éxito -> { res: { status: 'ok', order_id: '...' } }
-        // Si error -> { error: { error_message: '...' } }
         if (orderRes.error) {
-            const msg = orderRes.error.error_message || "Error desconocido en la API oficial";
-            throw new Error(`Top4SMM: ${msg}`);
+            const msg = orderRes.error.error_message || "incidencia desconocida";
+            throw new Error(`Sistema: ${msg}`);
         }
 
         if (!orderRes.res || orderRes.res.status !== "ok") {
-            throw new Error("La API no devolvió un estado OK");
+            throw new Error("El sistema de procesamiento no ha confirmado la recepción correcta.");
         }
 
-        // Actualizamos nuestra orden con su Número Oficial e iniciamos ciclo de vida
+        // Actualizamos nuestra orden e iniciamos ciclo de vida
         return await tx.order.update({
             where: { id: order.id },
             data: { 
@@ -119,9 +118,9 @@ export async function POST(req: Request) {
         });
     });
 
-    return NextResponse.json({ success: true, message: "Pedido enviado exitosamente", newBalance: transaction.charge });
+    return NextResponse.json({ success: true, message: "Solicitud iniciada y enviada a procesamiento exitosamente", newBalance: transaction.charge });
   } catch (error: any) {
-    console.error("Order Transaction Failed: ", error);
-    return NextResponse.json({ error: "Fallo tu pedido. Por favor avisa a soporte: " + (error.message || "") }, { status: 500 });
+    console.error("Internal Transaction Error: ", error);
+    return NextResponse.json({ error: "Hubo un contratiempo con tu solicitud. " + (error.message || "") }, { status: 500 });
   }
 }

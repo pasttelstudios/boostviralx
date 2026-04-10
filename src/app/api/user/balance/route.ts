@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Acceso denegado. Se requiere autenticación." }, { status: 401 });
   }
 
   try {
@@ -16,7 +16,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "Usuario no reconocido por el sistema." }, { status: 404 });
     }
 
     return NextResponse.json({ 
@@ -24,6 +24,6 @@ export async function GET() {
       isVip: user.isVip 
     });
   } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Error de sincronización de fondos." }, { status: 500 });
   }
 }
