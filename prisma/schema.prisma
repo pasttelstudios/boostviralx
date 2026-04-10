@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // ADMIN or USER
+  isVip     Boolean  @default(false)  // If VIP, gets real Top4smm prices
+  balance   Float    @default(0.0) // Saldo en dólares
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id             String   @id @default(uuid())
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
+  serviceId      String   // ID del servicio en top4smm
+  serviceName    String   // Nombre del servicio guardado en el momento
+  link           String   // URL a potenciar
+  quantity       Int      // Cantidad de followers, likes, etc
+  charge         Float    // Cuánto se le cobró al cliente en tu plataforma (+20% aplicado)
+  cost           Float    // Cuánto costó en top4smm originalmente
+  status         String   @default("Pending") // Pending, In progress, Completed, Partial, Canceled
+  top4smmOrderId String?  // ID que devuelve la API de top4smm
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
