@@ -1,0 +1,213 @@
+"use client";
+
+import { useState } from "react";
+import { Search, Plus, Minus, ShieldAlert, Star } from "lucide-react";
+import { searchUserAction, updateBalanceAction, toggleVipAction } from "../../actions/admin";
+
+export default function AdminPanel() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  
+  const [amount, setAmount] = useState("");
+  const [mode, setMode] = useState<"ADD" | "SUB" | "SET">("ADD");
+  const [message, setMessage] = useState("");
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await searchUserAction(searchQuery);
+    if (res.users) setSearchResults(res.users);
+    setSelectedUser(null);
+    setMessage("");
+  };
+
+  const handleTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setMessage("Procesando...");
+    
+    let finalAmount = Number(amount);
+    if (mode === "SUB") finalAmount = -Math.abs(finalAmount);
+    
+    // Si quisieran setear tendría que ser diferente ruta, pero usaremos Add o Sub
+    
+    const res = await updateBalanceAction(selectedUser.email, finalAmount);
+    if (res.error) setMessage("❌ " + res.error);
+    else {
+      setMessage("✅ Saldo actualizado. Nuevo saldo: $" + (res.balance?.toFixed(2) || "0.00"));
+      setSelectedUser({ ...selectedUser, balance: res.balance });
+      setAmount("");
+    }
+  };
+
+  const handleToggleVip = async () => {
+    if (!selectedUser) return;
+    const newStatus = !selectedUser.isVip;
+    setMessage("Actualizando VIP...");
+    const res = await toggleVipAction(selectedUser.email, newStatus);
+    if (res.error) setMessage("❌ " + res.error);
+    else {
+      setMessage(newStatus ? "🌟 Promovido a VIP (Precios de costo real)" : "👤 VIP Revocado (Precios +20%)");
+      setSelectedUser({ ...selectedUser, isVip: newStatus });
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-10">
+       <div className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow border border-red-200 dark:border-red-800/50 p-8">
+          <div className="flex items-center gap-4 mb-4">
+            <ShieldAlert size={32} className="text-red-600" />
+            <div>
+              <h2 className="text-2xl font-bold text-red-700 dark:text-red-400">Banco y Base de Datos (Admin)</h2>
+              <p className="text-red-600/80 dark:text-red-500/80">Busca a un cliente por su correo o nombre y modifica su capital virtual.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+             {/* Caja de Búsqueda */}
+             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+                <form onSubmit={handleSearch} className="space-y-4">
+                   <label className="block font-bold text-slate-700 dark:text-slate-300">
+                     Buscar Cliente
+                   </label>
+                   <div className="flex gap-2">
+                     <input 
+                       type="text" 
+                       value={searchQuery}
+                       onChange={(e) => setSearchQuery(e.target.value)}
+                       className="w-full px-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white"
+                       placeholder="Nombre o correo..."
+                     />
+                     <button type="submit" className="bg-slate-800 text-white px-4 rounded-lg"><Search size={20}/></button>
+                   </div>
+                </form>
+
+                <div className="mt-6 space-y-3">
+                   {searchResults.map(user => (
+                     <div 
+                        key={user.id} 
+                        onClick={() => setSelectedUser(user)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedUser?.id === user.id ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200 hover:border-red-200'}`}
+                     >
+                        <p className="font-bold flex items-center gap-1">
+                           {user.name} 
+                           {user.role === "ADMIN" && <span title="Admin">👑</span>}
+                           {user.isVip && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
+                        </p>
+                        <p className="text-sm text-slate-500">{user.email}</p>
+                        <p className="font-mono text-green-600 font-bold mt-1">${user.balance.toFixed(2)}</p>
+                     </div>
+                   ))}
+                </div>
+             </div>
+
+             {/* Caja de Detalles y Recarga */}
+             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+                {!selectedUser ? (
+                   <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                      <p>Selecciona un usuario para modificar su saldo</p>
+                   </div>
+                ) : (
+                   <>
+                   <form onSubmit={handleTransaction} className="space-y-6">
+                      <div>
+                        <div className="flex justify-between items-start">
+                           <div>
+                              <h3 className="font-bold text-xl flex items-center gap-2">
+                                 {selectedUser.name}
+                                 {selectedUser.isVip && <Star size={18} className="text-yellow-500 fill-yellow-500" />}
+                              </h3>
+                              <p className="text-slate-500">{selectedUser.email}</p>
+                           </div>
+                           <button 
+                              type="button"
+                              onClick={handleToggleVip} 
+                              className={`px-3 py-1.5 text-xs font-bold rounded-full flex items-center gap-1 border ${selectedUser.isVip ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'}`}
+                           >
+                              <Star size={14} className={selectedUser.isVip ? "fill-yellow-500" : ""} />
+                              {selectedUser.isVip ? "Quitar VIP" : "Ascender a VIP"}
+                           </button>
+                        </div>
+                        
+                        <div className="mt-4 p-4 bg-slate-100 dark:bg-slate-800 rounded flex gap-4 items-center">
+                           <span>Saldo Actual:</span>
+                           <span className="text-xl font-bold font-mono text-green-600 flex-1">${selectedUser.balance.toFixed(2)}</span>
+                           
+                           {selectedUser.isVip && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">Compra sin comisión (Costo Real)</span>}
+                        </div>
+                      </div>
+
+                      <div>
+                         <label className="block font-bold mt-6 mb-2">Acción de Saldo</label>
+                         <div className="flex gap-2 mb-4">
+                            <button type="button" onClick={() => setMode("ADD")} className={`flex-1 py-2 rounded font-bold border ${mode === "ADD" ? "bg-green-100 text-green-700 border-green-300" : "bg-slate-50 text-slate-500"}`}>Añadir (+)</button>
+                            <button type="button" onClick={() => setMode("SUB")} className={`flex-1 py-2 rounded font-bold border ${mode === "SUB" ? "bg-red-100 text-red-700 border-red-300" : "bg-slate-50 text-slate-500"}`}>Quitar (-)</button>
+                         </div>
+                         
+                         <input 
+                           type="number" 
+                           step="0.01"
+                           min="0.01"
+                           required
+                           value={amount}
+                           onChange={(e) => setAmount(e.target.value)}
+                           className="w-full px-3 py-3 rounded-lg border border-slate-300 bg-slate-50 font-mono text-lg"
+                           placeholder="Ej: 50.00"
+                         />
+                      </div>
+
+                      <button type="submit" className={`w-full py-3 rounded-lg font-bold text-white shadow-md ${mode === "ADD" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
+                         {mode === "ADD" ? "Sumar Dinero" : "Restar Dinero"}
+                      </button>
+
+                      {message && <div className="p-3 text-center rounded bg-slate-100 font-bold">{message}</div>}
+                   </form>
+
+                   {selectedUser.orders && selectedUser.orders.length > 0 && (
+                      <div className="mt-8 border-t pt-6">
+                         <h4 className="font-bold mb-4 flex items-center gap-2">Últimos Movimientos <span className="bg-slate-200 text-slate-700 px-2 rounded-full text-xs">{selectedUser.orders.length}</span></h4>
+                         <div className="overflow-x-auto max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+                            <table className="w-full text-left text-sm text-slate-600">
+                               <thead className="sticky top-0 bg-slate-50 border-b">
+                                  <tr>
+                                     <th className="p-3">Fecha</th>
+                                     <th className="p-3">Servicio</th>
+                                     <th className="p-3">Cargo/Abono</th>
+                                     <th className="p-3 text-right">Estado</th>
+                                  </tr>
+                               </thead>
+                               <tbody className="divide-y">
+                                  {selectedUser.orders.map((order: any) => {
+                                     const isBalSys = order.top4smmOrderId === "SYSTEM_BAL";
+                                     return (
+                                        <tr key={order.id} className="hover:bg-slate-50 transition">
+                                           <td className="p-3 whitespace-nowrap text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</td>
+                                           <td className="p-3 max-w-[200px] truncate" title={order.serviceName}>
+                                              {isBalSys ? "🏦 " : "⚡ "}{order.serviceName}
+                                           </td>
+                                           <td className="p-3 font-mono font-bold">
+                                              <span className={order.charge > 0 && isBalSys ? 'bg-green-100 text-green-700 px-2 py-1 rounded' : 'bg-slate-100 text-slate-700 px-2 py-1 rounded'}>
+                                                 {isBalSys && order.charge > 0 ? '+' : ''}{!isBalSys ? '-' : ''}{order.charge}$
+                                              </span>
+                                           </td>
+                                           <td className="p-3 text-right">
+                                              <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${order.status === 'Completed' ? 'bg-green-100 text-green-700' : order.status === 'Canceled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {order.status}
+                                              </span>
+                                           </td>
+                                        </tr>
+                                     );
+                                  })}
+                               </tbody>
+                            </table>
+                         </div>
+                      </div>
+                   )}
+                   </>
+                )}
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
