@@ -113,7 +113,8 @@ export async function POST(req: Request) {
             where: { id: order.id },
             data: { 
                status: "Processing",
-               top4smmOrderId: orderRes.res.order_id ? String(orderRes.res.order_id) : null
+               top4smmOrderId: orderRes.res.order_id ? String(orderRes.res.order_id) : null,
+               startCount: orderRes.res.start_count ? Number(orderRes.res.start_count) : 0
             }
         });
     });

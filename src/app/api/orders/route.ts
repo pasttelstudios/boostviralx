@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) return NextResponse.json({ error: "Usuario no reconocido por el sistema." }, { status: 404 });
 
-    // 1. Obtener órdenes locales primero para asegurar que siempre haya algo que mostrar
+    // 1. Obtener órdenes locales primero
     const orders = await prisma.order.findMany({
        where: { userId: user.id },
        orderBy: { createdAt: "desc" }
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
        !["Completed", "Canceled", "Partial"].includes(o.status)
     );
 
-    // 2. Intentar sincronización con el centro de procesamiento de forma segura
+    // 2. Intentar sincronización segura
     if (activeOrders.length > 0) {
        try {
           const apiKey = process.env.TOP4SMM_API_KEY;
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
           
           const queryParams = new URLSearchParams({
              key: apiKey || "",
-             act: "status", // Corregido de 'action' a 'act' según documentación
+             act: "status",
              orders: orderIds
           });
 
@@ -49,7 +49,6 @@ export async function GET(req: Request) {
              syncData = JSON.parse(rawResponse);
           } catch (e) {
              console.error("Order sync parse failure:", rawResponse);
-             // No lanzamos error, permitimos que el flujo continúe con los datos locales
           }
 
           if (syncData && !syncData.error) {
@@ -57,12 +56,19 @@ export async function GET(req: Request) {
                 const realData = syncData[activeDbOrder.top4smmOrderId as string];
                 if (realData && realData.status) {
                     const newStatus = realData.status; 
+                    const startCountVal = realData.start_count ? Number(realData.start_count) : activeDbOrder.startCount;
+                    const remainsVal = realData.remains ? Number(realData.remains) : activeDbOrder.remains;
                     
-                    if (newStatus !== activeDbOrder.status) {
+                    // Solo actualizamos si algo cambió
+                    if (newStatus !== activeDbOrder.status || startCountVal !== activeDbOrder.startCount || remainsVal !== activeDbOrder.remains) {
                        await prisma.$transaction(async (tx) => {
                           await tx.order.update({
                               where: { id: activeDbOrder.id },
-                              data: { status: newStatus }
+                              data: { 
+                                 status: newStatus,
+                                 startCount: startCountVal,
+                                 remains: remainsVal
+                              }
                           });
 
                           if (newStatus === "Canceled") {
@@ -88,13 +94,10 @@ export async function GET(req: Request) {
              }
           }
        } catch (syncError) {
-          // Si el servidor externo está caído o no responde, 
-          // simplemente logueamos el error pero NO bloqueamos la respuesta al usuario.
           console.error("Soft order sync failed:", syncError);
        }
     }
 
-    // 3. Devolver las órdenes actualizadas (o las locales si falló la sincronización)
     const finalOrders = await prisma.order.findMany({
        where: { userId: user.id },
        orderBy: { createdAt: "desc" }

@@ -262,7 +262,7 @@ export default function Dashboard() {
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">
            {t("select_network" as any) || "Elija una red social para la promoción"}
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
           {NETWORKS.map(net => (
             <button
               key={net.name}
@@ -284,10 +284,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         
         {/* Formulario a la Izquierda */}
-        <div className="md:col-span-7 space-y-6">
+        <div className="xl:col-span-7 space-y-6">
            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
              <form className="space-y-5">
                 <div>
@@ -501,7 +501,7 @@ export default function Dashboard() {
         </div>
 
         {/* Resumen a la Derecha */}
-        <div className="md:col-span-5 space-y-6">
+        <div className="xl:col-span-5 space-y-6">
            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sticky top-6">
               <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white">Resumen pedido</h3>
               
