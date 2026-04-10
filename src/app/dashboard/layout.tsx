@@ -6,6 +6,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import SidebarNav from "./SidebarNav";
 import LogoutButton from "./LogoutButton";
 import prisma from "../../lib/prisma";
+import BalanceDisplay from "./BalanceDisplay";
 
 export default async function DashboardLayout({
   children,
@@ -22,7 +23,7 @@ export default async function DashboardLayout({
 
   const userEmail = session.user?.email;
   const userDb = userEmail ? await prisma.user.findUnique({ where: { email: userEmail } }) : null;
-  const realBalance = userDb?.balance || 0;
+  const initialBalance = userDb?.balance || 0;
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-500 selection:text-white">
@@ -38,14 +39,7 @@ export default async function DashboardLayout({
           <SidebarNav isAdmin={isAdmin} />
         </div>
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-           <div className="px-4 py-4 mb-2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg shadow-blue-500/20 text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-white/20 transition-colors"></div>
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 flex items-center justify-between mb-1">
-                 Mi Saldo
-                 {userDb?.isVip && <span className="bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded text-[10px] uppercase font-black">VIP</span>}
-              </p>
-              <p className="text-3xl font-black tracking-tight">${realBalance.toFixed(2)}</p>
-           </div>
+           <BalanceDisplay initialBalance={initialBalance} />
            <LogoutButton />
         </div>
       </div>
@@ -57,13 +51,9 @@ export default async function DashboardLayout({
            <div className="flex items-center gap-6">
               <LanguageSwitcher />
               
-              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg font-mono font-bold text-slate-800 dark:text-slate-200">
-                 <Wallet size={18} className="text-green-600 dark:text-green-500" />
-                 ${realBalance.toFixed(2)}
-                 {userDb?.isVip && <span className="ml-1 text-[10px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded leading-none">VIP</span>}
-              </div>
+              <BalanceDisplay initialBalance={initialBalance} variant="header" />
 
-              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center font-bold text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800">
+              <div title={session.user?.name || "Usuario"} className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center font-bold text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800">
                  {session.user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
            </div>

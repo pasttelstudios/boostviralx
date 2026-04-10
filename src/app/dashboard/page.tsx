@@ -141,53 +141,49 @@ export default function Dashboard() {
   const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
-     const fetchProfile = async () => {
-        if (!link || linkError || !link.includes("http")) {
-           setProfileInfo(null);
-           return;
+    const fetchProfile = async () => {
+      if (!link || linkError || !link.includes("http")) {
+        setProfileInfo(null);
+        return;
+      }
+
+      setProfileLoading(true);
+      try {
+        let username = "";
+        let platform = "";
+        if (link.includes("instagram.com/")) {
+          username = link.split("instagram.com/")[1].split("/")[0].split("?")[0];
+          platform = "instagram";
+        } else if (link.includes("tiktok.com/@")) {
+          username = link.split("tiktok.com/@")[1].split("/")[0].split("?")[0];
+          platform = "tiktok";
+        } else if (link.includes("facebook.com/")) {
+          username = link.split("facebook.com/")[1].split("/")[0].split("?")[0];
+          platform = "facebook";
         }
 
-        setProfileLoading(true);
-        try {
-           // Extraer username del link
-           let username = "";
-           let platform = "";
-           if (link.includes("instagram.com/")) {
-              username = link.split("instagram.com/")[1].split("/")[0].split("?")[0];
-              platform = "instagram";
-           } else if (link.includes("tiktok.com/@")) {
-              username = link.split("tiktok.com/@")[1].split("/")[0].split("?")[0];
-              platform = "tiktok";
-           } else if (link.includes("facebook.com/")) {
-              username = link.split("facebook.com/")[1].split("/")[0].split("?")[0];
-              platform = "facebook";
-           } else {
-              username = link.split("/").filter(Boolean).pop() || "User";
-           }
+        if (!username) return;
 
-           if (!username) throw new Error("No username found");
-
-           // Simulamos una búsqueda que "antes funcionaba"
-           await new Promise(r => setTimeout(r, 1200));
-           
-           // Usamos unavatar.io para obtener la foto real (es muy estable)
-           const avatarUrl = platform ? `https://unavatar.io/${platform}/${username}` : `https://ui-avatars.com/api/?name=${username}&background=random&size=128`;
-
-           setProfileInfo({
-              name: username,
-              followers: (Math.floor(Math.random() * 20000) + 5000).toLocaleString(),
-              avatar: avatarUrl
-           });
-        } catch (err) {
-           console.error("Error fetching profile:", err);
-        } finally {
-           setProfileLoading(false);
+        // Llamamos a nuestra nueva API interna (Server-side) que es mucho más estable
+        const lookupRes = await fetch(`/api/lookup?username=${username}&platform=${platform}`);
+        if (lookupRes.ok) {
+          const data = await lookupRes.json();
+          setProfileInfo({
+            name: data.name,
+            followers: data.followers,
+            avatar: data.avatar
+          });
         }
-     };
+      } catch (err) {
+        console.error("Error fetching profile via server lookup:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
 
-     if (link.length > 8) {
-        fetchProfile();
-     }
+    if (link.length > 8) {
+      fetchProfile();
+    }
   }, [link, linkError]);
 
   const calcTotal = () => {
@@ -237,7 +233,7 @@ export default function Dashboard() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-               serviceId: selectedService.id, // Esto ahora funcionará gracias al mapeo en la API
+               serviceId: selectedService.id,
                link: link,
                quantity: Number(quantity)
             })
@@ -249,7 +245,9 @@ export default function Dashboard() {
          } else {
             setBuyMessage("✅ " + data.message);
             setLink("");
-            setTimeout(() => { window.location.reload(); }, 2000); // Recargar saldo visible
+            setQuantity("");
+            // El saldo se actualizará solo en segundos gracias a BalanceDisplay
+            setTimeout(() => setBuyMessage(""), 5000);
          }
       } catch (err) {
          setBuyMessage("❌ Error de conexión al servidor");
@@ -496,7 +494,7 @@ export default function Dashboard() {
                   >
                      {t("submit" as any) || "Enviar"}
                   </button>
-                  {buyMessage && <p className="mt-2 text-green-600 font-bold text-sm absolute top-full left-0 pt-2">{buyMessage}</p>}
+                  {buyMessage && <p className="mt-2 text-green-600 font-bold text-sm">{buyMessage}</p>}
                 </div>
              </form>
            </div>

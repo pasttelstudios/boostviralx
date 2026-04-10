@@ -89,7 +89,14 @@ export async function POST(req: Request) {
             }).toString()
         });
         
-        const orderRes = await orderReq.json();
+        const rawResponse = await orderReq.text();
+        let orderRes: any;
+        try {
+            orderRes = JSON.parse(rawResponse);
+        } catch (e) {
+            console.error("Top4SMM malformed response:", rawResponse);
+            throw new Error("La API oficial respondió algo inesperado (no es JSON). Por favor contacta a soporte técnico.");
+        }
 
         // Según doc oficial: si éxito -> { res: { status: 'ok', order_id: '...' } }
         // Si error -> { error: { error_message: '...' } }
