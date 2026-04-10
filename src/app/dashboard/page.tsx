@@ -149,33 +149,24 @@ export default function Dashboard() {
 
       setProfileLoading(true);
       try {
-        let username = "";
-        let platform = "";
-        if (link.includes("instagram.com/")) {
-          username = link.split("instagram.com/")[1].split("/")[0].split("?")[0];
-          platform = "instagram";
-        } else if (link.includes("tiktok.com/@")) {
-          username = link.split("tiktok.com/@")[1].split("/")[0].split("?")[0];
-          platform = "tiktok";
-        } else if (link.includes("facebook.com/")) {
-          username = link.split("facebook.com/")[1].split("/")[0].split("?")[0];
-          platform = "facebook";
-        }
-
-        if (!username) return;
-
-        // Llamamos a nuestra nueva API interna (Server-side) que es mucho más estable
-        const lookupRes = await fetch(`/api/lookup?username=${username}&platform=${platform}`);
+        const platform = selectedNetwork.toLowerCase();
+        
+        // Pasamos el enlace completo codificado. Nuestra API de espejo se 
+        // encargará de que Top4SMM devuelva la foto y seguidores exactos.
+        const lookupRes = await fetch(`/api/lookup?username=${encodeURIComponent(link)}&platform=${platform}`);
+        
         if (lookupRes.ok) {
           const data = await lookupRes.json();
-          setProfileInfo({
-            name: data.name,
-            followers: data.followers,
-            avatar: data.avatar
-          });
+          if (data && !data.error) {
+             setProfileInfo({
+               name: data.name,
+               followers: data.followers,
+               avatar: data.avatar
+             });
+          }
         }
       } catch (err) {
-        console.error("Error fetching profile via server lookup:", err);
+        console.error("Error fetching mirror profile:", err);
       } finally {
         setProfileLoading(false);
       }
