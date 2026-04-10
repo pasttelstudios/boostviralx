@@ -485,16 +485,23 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="pt-4 relative">
+                <div className="pt-4 flex items-center gap-4 relative">
                   <button 
                     type="button" 
                     onClick={handleOrder}
                     disabled={!isQuantityValid || !!linkError || !link}
-                    className="w-[120px] bg-[#c9242b] hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded transition-colors"
+                    className="min-w-[120px] bg-[#c9242b] hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded transition-colors"
                   >
                      {t("submit" as any) || "Enviar"}
                   </button>
-                  {buyMessage && <p className="mt-2 text-green-600 font-bold text-sm">{buyMessage}</p>}
+                  {isQuantityValid && (
+                    <div className="flex flex-col">
+                       <span className="text-[10px] text-slate-400 font-bold uppercase">Total</span>
+                       <span className="text-lg font-black text-slate-800 dark:text-white leading-tight">
+                          {calcTotal()}$
+                       </span>
+                    </div>
+                  )}
                 </div>
              </form>
            </div>
