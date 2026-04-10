@@ -54,6 +54,9 @@ export async function GET() {
       else if (searchStr.includes("REDDIT")) network = "Reddit";
       else if (searchStr.includes("LINKEDIN")) network = "LinkedIn";
       else if (searchStr.includes("KICK")) network = "Kick";
+      else if (searchStr.includes("DISCORD")) network = "Discord";
+      else if (searchStr.includes("PINTEREST")) network = "Pinterest";
+      else if (searchStr.includes("SNAPCHAT")) network = "Snapchat";
       
       return {
         ...item,

@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) return NextResponse.json({ error: "Usuario no reconocido por el sistema." }, { status: 404 });
 
-    // 1. Obtener órdenes locales primero (Blindaje de consulta)
+    // 1. Obtener órdenes locales
     let orders: any[] = [];
     try {
        orders = await prisma.order.findMany({
@@ -21,8 +21,7 @@ export async function GET(req: Request) {
           orderBy: { createdAt: "desc" }
        });
     } catch (dbError) {
-       console.error("Database fetch error in orders:", dbError);
-       // Si falla la consulta a los nuevos campos, devolvemos un array vacío pero no rompemos la app
+       console.error("Database fetch error:", dbError);
        return NextResponse.json([]);
     }
 
@@ -31,85 +30,75 @@ export async function GET(req: Request) {
        o.top4smmOrderId !== "SYSTEM" && 
        o.top4smmOrderId !== "SYSTEM_BAL" &&
        !["Completed", "Canceled", "Partial"].includes(o.status)
-    );
+    ).slice(0, 15); // Limitado para no sobrecargar el servidor
 
-    // 2. Sincronización segura (Soft Update)
+    // 2. Sincronización Individual de Precisión (act=order_info)
     if (activeOrders.length > 0) {
-       try {
-          const apiKey = process.env.TOP4SMM_API_KEY;
-          const orderIds = activeOrders.map(o => o.top4smmOrderId).join(",");
-          
-          const queryParams = new URLSearchParams({
-             key: apiKey || "",
-             act: "status",
-             orders: orderIds
-          });
+       const apiKey = process.env.TOP4SMM_API_KEY;
+       
+       for (const activeDbOrder of activeOrders) {
+          try {
+             // Consultamos cada pedido individualmente para máxima precisión
+             const queryParams = new URLSearchParams({
+                key: apiKey || "",
+                act: "order_info",
+                id: activeDbOrder.top4smmOrderId || ""
+             });
 
-          // Aumentamos el timeout y manejamos la respuesta con cautela
-          const syncReq = await fetch(`https://top4smm.com/api.php?${queryParams.toString()}`, {
-             cache: "no-store",
-             headers: { 'Accept': 'application/json' },
-             next: { revalidate: 0 }
-          });
+             const syncReq = await fetch(`https://top4smm.com/api.php?${queryParams.toString()}`, {
+                cache: "no-store",
+                headers: { 'Accept': 'application/json' }
+             });
 
-          if (syncReq.ok) {
-             const rawResponse = await syncReq.text();
-             let syncData: any;
-             try {
-                syncData = JSON.parse(rawResponse);
-             } catch (e) {
-                console.error("Order sync parse failure (Non-JSON)");
-             }
+             if (syncReq.ok) {
+                const realData = await syncReq.json();
+                
+                // Si la API devuelve el objeto de la orden (Top4SMM devuelve directamente el objeto)
+                if (realData && realData.status) {
+                    const newStatus = realData.status; 
+                    const startCountVal = realData.start_count ? parseInt(realData.start_count) : (activeDbOrder.startCount || 0);
+                    const remainsVal = (realData.remains !== undefined) ? parseInt(realData.remains) : (activeDbOrder.remains || 0);
 
-             if (syncData && !syncData.error) {
-                for (let activeDbOrder of activeOrders) {
-                   const realData = syncData[activeDbOrder.top4smmOrderId as string];
-                   if (realData && realData.status) {
-                       const newStatus = realData.status; 
-                       // Aseguramos que los valores sean números antes de guardar
-                       const startCountVal = realData.start_count ? parseInt(realData.start_count) : (activeDbOrder.startCount || 0);
-                       const remainsVal = realData.remains ? parseInt(realData.remains) : (activeDbOrder.remains || 0);
-                       
-                       if (newStatus !== activeDbOrder.status || startCountVal !== activeDbOrder.startCount || remainsVal !== activeDbOrder.remains) {
-                          await prisma.$transaction(async (tx) => {
-                             await tx.order.update({
-                                 where: { id: activeDbOrder.id },
-                                 data: { 
-                                    status: newStatus,
-                                    startCount: startCountVal,
-                                    remains: remainsVal
-                                 }
+                    // Solo actualizar si hay cambios reales
+                    if (newStatus !== activeDbOrder.status || startCountVal !== activeDbOrder.startCount || remainsVal !== activeDbOrder.remains) {
+                       await prisma.$transaction(async (tx) => {
+                          await tx.order.update({
+                              where: { id: activeDbOrder.id },
+                              data: { 
+                                 status: newStatus,
+                                 startCount: startCountVal,
+                                 remains: remainsVal
+                              }
+                          });
+
+                          // Manejo de reembolsos automáticos
+                          if (newStatus === "Canceled") {
+                             await tx.user.update({
+                                where: { id: user.id },
+                                data: { balance: { increment: activeDbOrder.charge } }
                              });
-
-                             if (newStatus === "Canceled") {
+                          } else if (newStatus === "Partial") {
+                             const rCount = parseInt(realData.remains) || 0;
+                             if (rCount > 0 && activeDbOrder.quantity > 0) {
+                                const refundRatio = rCount / activeDbOrder.quantity;
+                                const refundAmount = activeDbOrder.charge * refundRatio;
                                 await tx.user.update({
                                    where: { id: user.id },
-                                   data: { balance: { increment: activeDbOrder.charge } }
+                                   data: { balance: { increment: refundAmount } }
                                 });
-                             } else if (newStatus === "Partial") {
-                                const rCount = parseInt(realData.remains) || 0;
-                                const totalQ = activeDbOrder.quantity;
-                                if (rCount > 0 && totalQ > 0) {
-                                   const refundRatio = rCount / totalQ;
-                                   const refundAmount = activeDbOrder.charge * refundRatio;
-                                   await tx.user.update({
-                                      where: { id: user.id },
-                                      data: { balance: { increment: refundAmount } }
-                                   });
-                                }
                              }
-                          });
-                       }
-                   }
+                          }
+                       });
+                    }
                 }
              }
+          } catch (itemError) {
+             console.error(`Error syncing order ${activeDbOrder.top4smmOrderId}:`, itemError);
           }
-       } catch (syncError) {
-          console.error("External sync bypassed due to connection issues.");
        }
     }
 
-    // 3. Respuesta final (Siempre devolvemos algo válido)
+    // 3. Respuesta final con datos actualizados
     const finalOrders = await prisma.order.findMany({
        where: { userId: user.id },
        orderBy: { createdAt: "desc" }
@@ -117,8 +106,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(finalOrders);
   } catch (error) {
-    console.error("Critical failure in orders API:", error);
-    // En caso de fallo crítico, devolvemos balanceado para que el front no muera
-    return NextResponse.json({ error: "Temporalmente fuera de sincronía. Reintenta en breve." }, { status: 500 });
+    console.error("Critical orders API failure:", error);
+    return NextResponse.json({ error: "Error de sincronización con el sistema de rastreo." }, { status: 500 });
   }
 }
