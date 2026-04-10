@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BoostViralX - Impulsa tus Redes",
   description: "Compra seguidores, likes y más. La mejor opción del mercado.",
+  icons: {
+    icon: "https://i.imgur.com/FWdL3Yt.png",
+  },
 };
 
 export default function RootLayout({

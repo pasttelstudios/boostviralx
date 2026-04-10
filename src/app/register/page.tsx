@@ -25,8 +25,8 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
-        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
-          <TrendingUp className="text-white w-7 h-7" />
+        <div className="mb-4">
+          <img src="https://i.imgur.com/FWdL3Yt.png" alt="Logo" className="w-16 h-16 object-contain" />
         </div>
         <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white">
           Crea tu cuenta

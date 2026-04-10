@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Wallet, Settings, LayoutDashboard, ShoppingCart, LogOut, Globe, ShieldAlert } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import SidebarNav from "./SidebarNav";
+import LogoutButton from "./LogoutButton";
 import prisma from "../../lib/prisma";
 
 export default async function DashboardLayout({
@@ -27,26 +28,25 @@ export default async function DashboardLayout({
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-500 selection:text-white">
       {/* Sidebar sidebar */}
       <div className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-        <div>
-          <div className="h-20 flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="overflow-y-auto">
+          <div className="h-20 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 gap-3">
+            <img src="https://i.imgur.com/FWdL3Yt.png" alt="Logo" className="w-8 h-8 object-contain floating" />
             <span className="font-extrabold text-2xl tracking-tight text-slate-900 dark:text-white">
               BoostViral<span className="text-blue-600">X</span>
             </span>
           </div>
           <SidebarNav isAdmin={isAdmin} />
         </div>
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-           <div className="px-4 py-3 mb-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+           <div className="px-4 py-4 mb-2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg shadow-blue-500/20 text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-white/20 transition-colors"></div>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 flex items-center justify-between mb-1">
                  Mi Saldo
-                 {userDb?.isVip && <span className="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold">VIP</span>}
+                 {userDb?.isVip && <span className="bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded text-[10px] uppercase font-black">VIP</span>}
               </p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">${realBalance.toFixed(2)}</p>
+              <p className="text-3xl font-black tracking-tight">${realBalance.toFixed(2)}</p>
            </div>
-           <a href="/api/auth/signout" className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl font-medium transition-colors">
-              <LogOut size={20} />
-              Cerrar Sesión
-           </a>
+           <LogoutButton />
         </div>
       </div>
 
