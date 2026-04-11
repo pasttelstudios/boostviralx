@@ -153,7 +153,7 @@ export default function AdminTicketsPage() {
                <div className="flex-1 overflow-y-auto p-8 space-y-6 flex flex-col bg-slate-50/30 dark:bg-slate-950/20">
                   {selectedTicket.messages.map((m: any) => {
                      const isSupport = m.senderName === "Soporte BoostViralX";
-                     const isMe = m.senderId === session?.user?.id; // Current User (should be Admin)
+                     const isMe = m.senderId === (session?.user as any)?.id; // Current User (should be Admin)
                      
                      return (
                         <div key={m.id} className={`flex ${isSupport ? 'justify-end' : 'justify-start'}`}>

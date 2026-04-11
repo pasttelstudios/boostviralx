@@ -188,7 +188,7 @@ export default function SupportPage() {
                <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col scroll-smooth">
                   {selectedTicket.messages.map((m: any) => {
                      const isSupport = m.senderName === "Soporte BoostViralX";
-                     const isMe = m.senderId === session?.user?.id || (!isSupport && !session?.user?.id); // Basic check
+                     const isMe = m.senderId === (session?.user as any)?.id || (!isSupport && !(session?.user as any)?.id); // Basic check
                      
                      return (
                         <div key={m.id} className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}>
