@@ -156,7 +156,14 @@ export async function syncUserOrdersAction(userId: string) {
       }
     });
 
-    if (orders.length === 0) return { success: true, orders: [] };
+    if (orders.length === 0) {
+      const allOrders = await prisma.order.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          take: 100
+      });
+      return { success: true, orders: allOrders };
+    }
 
     const apiKey = process.env.TOP4SMM_API_KEY;
     const updatedOrders = [];
