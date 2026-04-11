@@ -77,3 +77,38 @@ export async function updateBalanceAction(email: string, amount: number) {
     return { error: "Error actualizando saldo" };
   }
 }
+export async function getTopUsersAction() {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") return { error: "No autorizado" };
+
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { balance: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        balance: true,
+        isVip: true,
+        role: true,
+        _count: {
+          select: { orders: true }
+        },
+        orders: {
+           orderBy: { createdAt: 'desc' },
+           take: 30
+        }
+      }
+    });
+
+    return { 
+      users: users.map(u => ({
+        ...u,
+        orderCount: u._count.orders
+      })) 
+    };
+  } catch (error) {
+    return { error: "Error obteniendo ranking" };
+  }
+}

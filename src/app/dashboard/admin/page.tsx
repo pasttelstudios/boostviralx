@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Plus, Minus, ShieldAlert, Star } from "lucide-react";
-import { searchUserAction, updateBalanceAction, toggleVipAction } from "../../actions/admin";
+import { useState, useEffect } from "react";
+import { Search, Plus, Minus, ShieldAlert, Star, Trophy, Wallet, ShoppingBag } from "lucide-react";
+import { searchUserAction, updateBalanceAction, toggleVipAction, getTopUsersAction } from "../../actions/admin";
 
 export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,6 +12,15 @@ export default function AdminPanel() {
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState<"ADD" | "SUB" | "SET">("ADD");
   const [message, setMessage] = useState("");
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchTop = async () => {
+      const res = await getTopUsersAction();
+      if (res.users) setTopUsers(res.users);
+    };
+    fetchTop();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,6 +216,82 @@ export default function AdminPanel() {
                 )}
              </div>
           </div>
+
+        {/* Top 10 Users Ranking */}
+        <div className="mt-8 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
+           <div className="flex items-center gap-3 mb-8">
+              <div className="p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl text-yellow-600">
+                 <Trophy size={28} />
+              </div>
+              <div>
+                 <h2 className="text-2xl font-black text-slate-800 dark:text-white">Ranking de Clientes Top 10</h2>
+                 <p className="text-slate-500 dark:text-slate-400 text-sm font-medium transition-colors">Los usuarios más valiosos según saldo acumulado y volumen de pedidos.</p>
+              </div>
+           </div>
+
+           <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                 <thead>
+                    <tr className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                       <th className="px-4 py-4 text-center">Rank</th>
+                       <th className="px-4 py-4">Cliente</th>
+                       <th className="px-4 py-4">Créditos</th>
+                       <th className="px-4 py-4 text-center">Pedidos</th>
+                       <th className="px-4 py-4 text-right">Acción</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                    {topUsers.map((user, index) => (
+                       <tr 
+                          key={user.id} 
+                          className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all cursor-pointer"
+                          onClick={() => {
+                             setSelectedUser(user);
+                             window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                       >
+                          <td className="px-4 py-5 text-center">
+                             <span className={`inline-flex w-8 h-8 items-center justify-center rounded-full font-black text-xs ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-slate-200 text-slate-700' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
+                                #{index + 1}
+                             </span>
+                          </td>
+                          <td className="px-4 py-5">
+                             <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-blue-600">
+                                   {user.name[0]}
+                                </div>
+                                <div>
+                                   <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                                      {user.name}
+                                      {user.isVip && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
+                                   </p>
+                                   <p className="text-xs text-slate-500">{user.email}</p>
+                                </div>
+                             </div>
+                          </td>
+                          <td className="px-4 py-5">
+                             <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black font-mono">
+                                <Wallet size={14} />
+                                ${user.balance.toFixed(2)}
+                             </div>
+                          </td>
+                          <td className="px-4 py-5 text-center">
+                             <div className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-xs font-black text-slate-600 dark:text-slate-400">
+                                <ShoppingBag size={12} />
+                                {user.orderCount}
+                             </div>
+                          </td>
+                          <td className="px-4 py-5 text-right">
+                             <button className="text-blue-600 hover:text-blue-700 font-bold text-xs flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                                Gestionar <Search size={12} />
+                             </button>
+                          </td>
+                       </tr>
+                    ))}
+                 </tbody>
+              </table>
+           </div>
+        </div>
        </div>
     </div>
   );
