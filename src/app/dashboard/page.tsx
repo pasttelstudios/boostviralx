@@ -481,7 +481,7 @@ export default function Dashboard() {
                     type="button" 
                     onClick={handleOrder}
                     disabled={!isQuantityValid || !!linkError || !link}
-                    className="min-w-[120px] bg-[#c9242b] hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded transition-colors"
+                    className="min-w-[120px] bg-[#c9242b] hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded transition-colors shadow-lg shadow-red-500/10"
                   >
                      {t("submit" as any) || "Enviar"}
                   </button>
@@ -494,6 +494,16 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
+
+                {buyMessage && (
+                   <div className={`mt-4 p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all animate-in fade-in slide-in-from-top-2 ${
+                      buyMessage.includes("✅") 
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400" 
+                      : "bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800 text-rose-600 dark:text-rose-400"
+                   }`}>
+                      {buyMessage}
+                   </div>
+                )}
              </form>
            </div>
         </div>

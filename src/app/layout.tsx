@@ -9,7 +9,11 @@ export const metadata: Metadata = {
   title: "BoostViralX - Impulsa tus Redes",
   description: "Compra seguidores, likes y más. La mejor opción del mercado.",
   icons: {
-    icon: "https://i.imgur.com/FWdL3Yt.png",
+    icon: [
+      { url: "https://i.imgur.com/FWdL3Yt.png", type: "image/png" }
+    ],
+    shortcut: "https://i.imgur.com/FWdL3Yt.png",
+    apple: "https://i.imgur.com/FWdL3Yt.png",
   },
 };
 
