@@ -263,7 +263,7 @@ export default function AdminPanel() {
                                                  </span>
                                                  {!isBalSys && (
                                                     <span className="text-[9px] font-black text-blue-500 flex items-center gap-0.5 mt-0.5">
-                                                       <Hash size={8} /> ID Oficial: {order.top4smmOrderId || "PEND..."}
+                                                       <Hash size={8} /> ID: {order.top4smmOrderId || "PEND..."}
                                                     </span>
                                                  )}
                                               </div>

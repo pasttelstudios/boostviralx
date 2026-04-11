@@ -150,7 +150,7 @@ export default function MisPedidos() {
                                  </span>
                                  <div className="flex flex-wrap items-center gap-2">
                                     <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800/50 uppercase flex items-center gap-1">
-                                       <Hash size={10} /> ID Oficial: {order.top4smmOrderId || "SINC..."}
+                                       <Hash size={10} /> ID: {order.top4smmOrderId || "SINC..."}
                                     </span>
                                     {!isMoneyAdmin && (
                                        <a href={order.link} target="_blank" className="text-[10px] text-blue-500 border-b border-transparent hover:border-blue-500 transition-all font-medium flex items-center gap-1">
