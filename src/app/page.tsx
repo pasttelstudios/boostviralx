@@ -127,17 +127,16 @@ export default function Home() {
 
                  {/* Right Column: Video Visual */}
                  <div className="relative animate-in fade-in slide-in-from-right-4 duration-700">
-                    <div className="absolute inset-0 bg-blue-500/20 rounded-[3rem] blur-3xl -z-10"></div>
-                    <div className="rounded-[3rem] overflow-hidden border-8 border-slate-50 dark:border-slate-900 shadow-[0_40px_100px_rgba(0,0,0,0.1)] dark:shadow-none bg-black aspect-video relative">
+                    <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl -z-10"></div>
+                    <div className="relative flex justify-center lg:justify-end">
                        <video 
                           src="https://www.dropbox.com/scl/fi/3w16e14vyyof1asucbpb3/head-video.webm?rlkey=cqn4uivf5cj11lpp91m7bo6cj&raw=1" 
                           autoPlay 
                           muted 
                           loop 
                           playsInline
-                          className="w-full h-full object-cover"
+                          className="w-full max-w-[500px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(37,99,235,0.2)]"
                        />
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
                     </div>
                  </div>
               </div>
@@ -150,7 +149,7 @@ export default function Home() {
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
                  <div className="text-left">
                     <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">
-                       {language === 'es' ? 'Los más vendidos' : 'Best Seller'} <span className="text-blue-600">{language === 'es' ? 'Servicios' : 'Services'}</span>
+                       {language === 'es' ? 'Los servicios' : 'The Best'} <span className="text-blue-600">{language === 'es' ? 'más vendidos' : 'Services'}</span>
                     </h2>
                     <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xl">
                        {language === 'es' ? 'Nuestros paquetes más populares y efectivos para impulsar tu presencia digital al instante.' : 'Our most popular and effective packages to boost your digital presence instantly.'}
@@ -194,32 +193,32 @@ export default function Home() {
         </section>
 
         {/* TODO EN UNO SECTION */}
-        <section className="py-40 relative overflow-hidden bg-slate-950">
+        <section className="py-40 relative overflow-hidden bg-white dark:bg-slate-950 border-y border-slate-100 dark:border-slate-800">
            {/* Floating Icons Background */}
-           <div className="absolute inset-0 pointer-events-none opacity-40">
+           <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-[10%] left-[15%] animate-bounce duration-[6s] infinite">
-                 <img src="https://cdn.simpleicons.org/telegram/26A5E4" className="w-16 h-16 drop-shadow-[0_0_15px_rgba(38,165,228,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/telegram/26A5E4" className="w-20 h-20 drop-shadow-[0_0_20px_rgba(38,165,228,0.5)]" alt="Floating" />
               </div>
               <div className="absolute top-[20%] right-[10%] animate-floating-slow">
-                 <img src="https://cdn.simpleicons.org/tiktok/ffffff" className="w-20 h-20 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/tiktok/000000" className="w-24 h-24 drop-shadow-[0_0_30px_rgba(0,0,0,0.2)] dark:invert" alt="Floating" />
               </div>
               <div className="absolute bottom-[20%] left-[10%] animate-floating">
-                 <img src="https://cdn.simpleicons.org/spotify/1DB954" className="w-16 h-16 drop-shadow-[0_0_15px_rgba(29,185,84,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/spotify/1DB954" className="w-20 h-20 drop-shadow-[0_0_25px_rgba(29,185,84,0.5)]" alt="Floating" />
               </div>
               <div className="absolute bottom-[10%] -right-[5%] animate-bounce duration-[8s] infinite">
-                 <img src="https://cdn.simpleicons.org/facebook/1877F2" className="w-24 h-24 drop-shadow-[0_0_20px_rgba(24,119,242,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/facebook/1877F2" className="w-28 h-28 drop-shadow-[0_0_30px_rgba(24,119,242,0.5)]" alt="Floating" />
               </div>
               <div className="absolute top-[40%] left-[5%] animate-pulse">
-                 <img src="https://cdn.simpleicons.org/youtube/FF0000" className="w-20 h-20 drop-shadow-[0_0_20px_rgba(255,0,0,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/youtube/FF0000" className="w-24 h-24 drop-shadow-[0_0_30px_rgba(255,0,0,0.5)]" alt="Floating" />
               </div>
               <div className="absolute top-[60%] right-[5%] animate-floating-slow">
-                 <img src="https://cdn.simpleicons.org/twitch/9146FF" className="w-16 h-16 drop-shadow-[0_0_15px_rgba(145,70,255,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/twitch/9146FF" className="w-20 h-20 drop-shadow-[0_0_25px_rgba(145,70,255,0.5)]" alt="Floating" />
               </div>
               <div className="absolute bottom-[5%] left-[45%] animate-floating">
-                 <img src="https://cdn.simpleicons.org/x/ffffff" className="w-14 h-14" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/x/000000" className="w-16 h-16 dark:invert" alt="Floating" />
               </div>
               <div className="absolute top-[15%] right-[40%] animate-pulse">
-                 <img src="https://cdn.simpleicons.org/instagram/E4405F" className="w-20 h-20 drop-shadow-[0_0_20px_rgba(228,64,95,0.5)]" alt="Floating" />
+                 <img src="https://cdn.simpleicons.org/instagram/E4405F" className="w-24 h-24 drop-shadow-[0_0_30px_rgba(228,64,95,0.5)]" alt="Floating" />
               </div>
            </div>
 
