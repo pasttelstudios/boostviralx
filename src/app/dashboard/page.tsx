@@ -216,7 +216,7 @@ export default function Dashboard() {
   const handleOrder = async () => {
       if (!selectedService || !link || !quantity) return;
       
-      setBuyMessage("⏱️ Validando orden de forma segura...");
+      setBuyMessage("⏱️ Procesando orden..");
       
       try {
          // Importante: enviar serviceId correcto
