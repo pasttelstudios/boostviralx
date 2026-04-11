@@ -130,7 +130,7 @@ export default function Home() {
                     <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl -z-10"></div>
                     <div className="relative flex justify-center lg:justify-end">
                        <video 
-                          src="https://www.dropbox.com/scl/fi/3w16e14vyyof1asucbpb3/head-video.webm?rlkey=cqn4uivf5cj11lpp91m7bo6cj&raw=1" 
+                          src="https://www.dropbox.com/scl/fi/5xeo403kbonmsukd8vnb8/vecteezy_social-media-post-got-1-million-likes_21286706.mp4?rlkey=ui2k5lnznsc8g2wah0e9nl7ny&st=jmglpws6&raw=1" 
                           autoPlay 
                           muted 
                           loop 
@@ -224,10 +224,10 @@ export default function Home() {
 
            <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
               <h2 className="text-red-500 font-black tracking-widest uppercase text-lg mb-8">TODO EN UNO</h2>
-              <h3 className="text-5xl sm:text-7xl font-black text-white mb-10 tracking-tighter leading-[0.9]">
+              <h3 className="text-5xl sm:text-7xl font-black text-slate-900 dark:text-white mb-10 tracking-tighter leading-[0.9]">
                  Panel BoostViralX — 15+ Plataformas, un único panel de control
               </h3>
-              <p className="text-slate-400 text-lg sm:text-xl max-w-xl mx-auto mb-12 font-medium">
+              <p className="text-slate-600 dark:text-slate-400 text-lg sm:text-xl max-w-xl mx-auto mb-12 font-medium">
                  YouTube, Instagram, TikTok, Twitch, Kick, Spotify, y mucho más, todo desde un único panel de control. 
                  Crea una cuenta gratuita y prueba cualquier servicio antes de comprarlo.
               </p>
