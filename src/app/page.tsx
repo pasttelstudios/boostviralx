@@ -16,7 +16,7 @@ const PLATFORMS = [
   { name: "Spotify", icon: "https://cdn.simpleicons.org/spotify/1DB954" },
   { name: "SoundCloud", icon: "https://cdn.simpleicons.org/soundcloud/FF3300" },
   { name: "Twitter / X", icon: "https://cdn.simpleicons.org/x/000000" },
-  { name: "LinkedIn", icon: "https://cdn.simpleicons.org/linkedin" },
+  { name: "LinkedIn", icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg" },
   { name: "Reddit", icon: "https://cdn.simpleicons.org/reddit/FF4500" },
   { name: "Discord", icon: "https://cdn.simpleicons.org/discord/5865F2" },
   { name: "Pinterest", icon: "https://cdn.simpleicons.org/pinterest/E60023" },
@@ -40,9 +40,9 @@ export default function Home() {
           <div className="flex justify-between h-20 items-center">
             <div className="flex items-center gap-3 group cursor-pointer">
               <div className="group-hover:rotate-12 transition-transform duration-300">
-                <img src="https://i.imgur.com/FWdL3Yt.png" alt="BoostViralX Logo" className="w-12 h-12 object-contain" />
+                <img src="https://i.imgur.com/FWdL3Yt.png" alt="BoostViralX Logo" className="w-16 h-16 object-contain" />
               </div>
-              <span className="font-black text-3xl tracking-tighter text-slate-900 dark:text-white">
+              <span className="font-black text-2xl tracking-tighter text-slate-900 dark:text-white">
                 BoostViral<span className="text-blue-600">X</span>
               </span>
             </div>
