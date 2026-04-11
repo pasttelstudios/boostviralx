@@ -65,10 +65,10 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-[75vh] gap-6">
+    <div className="flex flex-col md:flex-row h-auto md:h-[75vh] gap-6">
       
       {/* Sidebar de Tickets */}
-      <div className="w-full md:w-80 flex flex-col gap-4">
+      <div className={`w-full md:w-80 flex flex-col gap-4 ${isCreating || selectedTicket ? 'hidden md:flex' : 'flex'}`}>
          <button 
            onClick={() => setIsCreating(true)}
            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
@@ -124,7 +124,10 @@ export default function SupportPage() {
             <div className="p-8 md:p-12 max-w-2xl mx-auto w-full">
                <div className="flex justify-between items-center mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white">Abrir Soporte</h2>
-                  <button onClick={() => setIsCreating(false)} className="text-slate-400 hover:text-red-500"><X /></button>
+                  <div className="flex items-center gap-2">
+                     <button onClick={() => setIsCreating(false)} className="md:hidden text-xs font-black bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-slate-600">VOLVER</button>
+                     <button onClick={() => setIsCreating(false)} className="text-slate-400 hover:text-red-500"><X /></button>
+                  </div>
                </div>
                <form onSubmit={handleCreate} className="space-y-6">
                   <div>
@@ -160,8 +163,11 @@ export default function SupportPage() {
                {/* Cabecera Chat */}
                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30 backdrop-blur-md">
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                        <MessageCircle size={24} />
+                     <button onClick={() => setSelectedTicket(null)} className="md:hidden p-2 -ml-2 text-slate-500">
+                        <ChevronRight className="rotate-180" size={20} />
+                     </button>
+                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                        <MessageCircle size={20} className="md:size-6" />
                      </div>
                      <div>
                         <h3 className="font-black text-slate-800 dark:text-white">{selectedTicket.subject}</h3>
