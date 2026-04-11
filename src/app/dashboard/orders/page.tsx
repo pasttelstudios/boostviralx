@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, History, ArrowRight, Gauge, CheckCircle2, AlertCircle, Clock, RefreshCcw } from "lucide-react";
+import { ShoppingCart, History, ArrowRight, Gauge, CheckCircle2, AlertCircle, Clock, RefreshCcw, Hash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../../LanguageContext";
 
@@ -148,9 +148,9 @@ export default function MisPedidos() {
                                  <span className="font-bold text-slate-800 dark:text-white text-sm line-clamp-1" title={order.serviceName}>
                                     {isMoneyAdmin ? `🏦 ${order.serviceName}` : order.serviceName}
                                  </span>
-                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 uppercase">
-                                       ID: {order.top4smmOrderId || order.id.slice(0,8)}
+                                 <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800/50 uppercase flex items-center gap-1">
+                                       <Hash size={10} /> ID Oficial: {order.top4smmOrderId || "SINC..."}
                                     </span>
                                     {!isMoneyAdmin && (
                                        <a href={order.link} target="_blank" className="text-[10px] text-blue-500 border-b border-transparent hover:border-blue-500 transition-all font-medium flex items-center gap-1">
