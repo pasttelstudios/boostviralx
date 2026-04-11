@@ -142,3 +142,62 @@ export async function resetUserPasswordAction(email: string, newPassword: string
     return { error: "Error restableciendo contraseña" };
   }
 }
+
+export async function syncUserOrdersAction(userId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session) return { error: "No autorizado" };
+
+  try {
+    const orders = await prisma.order.findMany({
+      where: { 
+        userId,
+        status: { in: ["Pending", "Processing", "In progress"] },
+        top4smmOrderId: { notIn: ["SYSTEM", "SYSTEM_BAL"], not: null }
+      }
+    });
+
+    if (orders.length === 0) return { success: true, orders: [] };
+
+    const apiKey = process.env.TOP4SMM_API_KEY;
+    const updatedOrders = [];
+
+    for (const order of orders) {
+      try {
+        const queryParams = new URLSearchParams({
+          key: apiKey || "",
+          act: "order_info",
+          id: order.top4smmOrderId || ""
+        });
+
+        const res = await fetch(`https://top4smm.com/api.php?${queryParams.toString()}`, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status) {
+            const up = await prisma.order.update({
+              where: { id: order.id },
+              data: { 
+                status: data.status,
+                startCount: data.start_count ? Number(data.start_count) : order.startCount,
+                remains: data.remains !== undefined ? Number(data.remains) : order.remains
+              }
+            });
+            updatedOrders.push(up);
+          }
+        }
+      } catch (e) {
+        console.error("Single order sync fail:", e);
+      }
+    }
+
+    // Devolver el historial completo actualizado
+    const allOrders = await prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+    });
+
+    return { success: true, orders: allOrders };
+  } catch (error) {
+    return { error: "Error sincronizando estados" };
+  }
+}

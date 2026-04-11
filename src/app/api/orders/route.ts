@@ -61,34 +61,14 @@ export async function GET(req: Request) {
 
                     // Solo actualizar si hay cambios reales
                     if (newStatus !== activeDbOrder.status || startCountVal !== activeDbOrder.startCount || remainsVal !== activeDbOrder.remains) {
-                       await prisma.$transaction(async (tx) => {
-                          await tx.order.update({
-                              where: { id: activeDbOrder.id },
-                              data: { 
-                                 status: newStatus,
-                                 startCount: startCountVal,
-                                 remains: remainsVal
-                              }
-                          });
-
-                          // Manejo de reembolsos automáticos
-                          if (newStatus === "Canceled") {
-                             await tx.user.update({
-                                where: { id: user.id },
-                                data: { balance: { increment: activeDbOrder.charge } }
-                             });
-                          } else if (newStatus === "Partial") {
-                             const rCount = parseInt(realData.remains) || 0;
-                             if (rCount > 0 && activeDbOrder.quantity > 0) {
-                                const refundRatio = rCount / activeDbOrder.quantity;
-                                const refundAmount = activeDbOrder.charge * refundRatio;
-                                await tx.user.update({
-                                   where: { id: user.id },
-                                   data: { balance: { increment: refundAmount } }
-                                });
-                             }
-                          }
-                       });
+                        await prisma.order.update({
+                            where: { id: activeDbOrder.id },
+                            data: { 
+                               status: newStatus,
+                               startCount: startCountVal,
+                               remains: remainsVal
+                            }
+                        });
                     }
                 }
              }

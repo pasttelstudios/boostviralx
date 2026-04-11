@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Minus, ShieldAlert, Star, Trophy, Wallet, ShoppingBag, Lock } from "lucide-react";
-import { searchUserAction, updateBalanceAction, toggleVipAction, getTopUsersAction, resetUserPasswordAction } from "../../actions/admin";
+import { Search, Plus, Minus, ShieldAlert, Star, Trophy, Wallet, ShoppingBag, Lock, Hash } from "lucide-react";
+import { searchUserAction, updateBalanceAction, toggleVipAction, getTopUsersAction, resetUserPasswordAction, syncUserOrdersAction } from "../../actions/admin";
 
 export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState<"ADD" | "SUB" | "SET">("ADD");
@@ -22,6 +23,19 @@ export default function AdminPanel() {
     };
     fetchTop();
   }, []);
+
+  const handleSelectUser = async (user: any) => {
+    setSelectedUser(user);
+    setMessage("");
+    setIsSyncing(true);
+    
+    // Sincronizar estados en tiempo real al seleccionar
+    const res = await syncUserOrdersAction(user.id);
+    if (res.orders) {
+       setSelectedUser((prev: any) => ({ ...prev, orders: res.orders }));
+    }
+    setIsSyncing(false);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +57,11 @@ export default function AdminPanel() {
     if (res.error) setMessage("❌ " + res.error);
     else {
       setMessage("✅ Saldo actualizado. Nuevo saldo: $" + (res.balance?.toFixed(2) || "0.00"));
-      setSelectedUser({ ...selectedUser, balance: res.balance, totalDeposited: (selectedUser.totalDeposited || 0) + (finalAmount > 0 ? finalAmount : 0) });
+      setSelectedUser({ 
+        ...selectedUser, 
+        balance: res.balance,
+        totalDeposited: (selectedUser.totalDeposited || 0) + (finalAmount > 0 ? finalAmount : 0)
+      });
       setAmount("");
       // Refresh top users to reflect changes
       const topRes = await getTopUsersAction();
@@ -97,7 +115,7 @@ export default function AdminPanel() {
                    {searchResults.map(user => (
                      <div 
                         key={user.id} 
-                        onClick={() => setSelectedUser(user)}
+                        onClick={() => handleSelectUser(user)}
                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedUser?.id === user.id ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200 hover:border-red-200'}`}
                      >
                         <p className="font-bold flex items-center gap-1 text-slate-900 dark:text-white">
@@ -215,7 +233,13 @@ export default function AdminPanel() {
 
                    {selectedUser.orders && selectedUser.orders.length > 0 && (
                       <div className="mt-8 border-t pt-6">
-                         <h4 className="font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-slate-200 text-sm">Últimos Movimientos <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 rounded-full text-xs">{selectedUser.orders.length}</span></h4>
+                         <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200 text-sm">
+                               Últimos Movimientos 
+                               <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 rounded-full text-xs">{selectedUser.orders.length}</span>
+                            </h4>
+                            {isSyncing && <span className="text-[10px] font-black text-blue-600 animate-pulse uppercase tracking-widest">Sincronizando con Proveedor...</span>}
+                         </div>
                          <div className="overflow-x-auto max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-lg">
                             <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
                                <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
@@ -230,20 +254,33 @@ export default function AdminPanel() {
                                   {selectedUser.orders.map((order: any) => {
                                      const isBalSys = order.top4smmOrderId === "SYSTEM_BAL";
                                      return (
-                                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition border-b last:border-0 dark:border-slate-800">
                                            <td className="p-3 whitespace-nowrap text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</td>
-                                           <td className="p-3 max-w-[200px] truncate" title={order.serviceName}>
-                                              {isBalSys ? "🏦 " : "⚡ "}{order.serviceName}
+                                           <td className="p-3">
+                                              <div className="flex flex-col">
+                                                 <span className="font-bold text-slate-700 dark:text-slate-200 truncate max-w-[180px]" title={order.serviceName}>
+                                                    {isBalSys ? "🏦 " : "⚡ "}{order.serviceName}
+                                                 </span>
+                                                 {!isBalSys && (
+                                                    <span className="text-[9px] font-black text-blue-500 flex items-center gap-0.5 mt-0.5">
+                                                       <Hash size={8} /> ID Oficial: {order.top4smmOrderId || "PEND..."}
+                                                    </span>
+                                                 )}
+                                              </div>
                                            </td>
                                            <td className="p-3 font-mono font-bold">
-                                              <span className={order.charge > 0 && isBalSys ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2 py-1 rounded' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 py-1 rounded'}>
+                                              <span className={order.charge > 0 && isBalSys ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2 py-1 rounded text-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 py-1 rounded text-xs'}>
                                                  {isBalSys && order.charge > 0 ? '+' : ''}{!isBalSys ? '-' : ''}{order.charge}$
                                               </span>
                                            </td>
                                            <td className="p-3 text-right">
-                                              <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${order.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : order.status === 'Canceled' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
-                                                {order.status}
-                                              </span>
+                                               <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md border ${
+                                                  order.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20' : 
+                                                  order.status === 'Canceled' ? 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20' : 
+                                                  'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20'
+                                               }`}>
+                                                 {order.status}
+                                               </span>
                                            </td>
                                         </tr>
                                      );
@@ -288,7 +325,7 @@ export default function AdminPanel() {
                           key={user.id} 
                           className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all cursor-pointer"
                           onClick={() => {
-                             setSelectedUser(user);
+                             handleSelectUser(user);
                              window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                        >
