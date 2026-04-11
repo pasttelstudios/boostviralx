@@ -3,6 +3,7 @@
 import prisma from "../../lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../lib/auth";
+import bcrypt from "bcryptjs";
 
 export async function searchUserAction(emailQuery: string) {
   const session = await getServerSession(authOptions);
@@ -15,11 +16,20 @@ export async function searchUserAction(emailQuery: string) {
          id: true, name: true, email: true, balance: true, role: true, isVip: true,
          orders: {
             orderBy: { createdAt: 'desc' },
-            take: 30
+            take: 100
          }
       }
     });
-    return { users };
+
+    const enrichedUsers = users.map(user => {
+       const totalDeposited = user.orders
+          .filter(o => o.top4smmOrderId === "SYSTEM_BAL" && (o.charge || 0) > 0)
+          .reduce((sum, o) => sum + (o.charge || 0), 0);
+       
+       return { ...user, totalDeposited };
+    });
+
+    return { users: enrichedUsers };
   } catch (error) {
     return { error: "Error buscando usuarios" };
   }
@@ -63,7 +73,7 @@ export async function updateBalanceAction(email: string, amount: number) {
             link: "-",
             quantity: 1,
             cost: amount,
-            charge: amount, // Guardar la cantidad positiva o negativa para que la vean
+            charge: amount, 
             status: "Completed",
             top4smmOrderId: "SYSTEM_BAL"
          }
@@ -77,6 +87,7 @@ export async function updateBalanceAction(email: string, amount: number) {
     return { error: "Error actualizando saldo" };
   }
 }
+
 export async function getTopUsersAction() {
   const session = await getServerSession(authOptions);
   if (!session || (session.user as any).role !== "ADMIN") return { error: "No autorizado" };
@@ -96,8 +107,8 @@ export async function getTopUsersAction() {
           select: { orders: true }
         },
         orders: {
-           orderBy: { createdAt: 'desc' },
-           take: 30
+           where: { top4smmOrderId: "SYSTEM_BAL", charge: { gt: 0 } },
+           select: { charge: true }
         }
       }
     });
@@ -105,10 +116,29 @@ export async function getTopUsersAction() {
     return { 
       users: users.map(u => ({
         ...u,
-        orderCount: u._count.orders
+        orderCount: u._count.orders,
+        totalDeposited: u.orders.reduce((sum, o) => sum + (o.charge || 0), 0)
       })) 
     };
   } catch (error) {
     return { error: "Error obteniendo ranking" };
+  }
+}
+
+export async function resetUserPasswordAction(email: string, newPassword: string) {
+  const session = await getServerSession(authOptions);
+  if (!session || (session.user as any).role !== "ADMIN") return { error: "No autorizado" };
+
+  if (!newPassword || newPassword.length < 6) return { error: "La contraseña debe tener al menos 6 caracteres" };
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+    return { success: true };
+  } catch (error) {
+    return { error: "Error restableciendo contraseña" };
   }
 }

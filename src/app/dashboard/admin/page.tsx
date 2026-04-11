@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Plus, Minus, ShieldAlert, Star, Trophy, Wallet, ShoppingBag } from "lucide-react";
-import { searchUserAction, updateBalanceAction, toggleVipAction, getTopUsersAction } from "../../actions/admin";
+import { Search, Plus, Minus, ShieldAlert, Star, Trophy, Wallet, ShoppingBag, Lock } from "lucide-react";
+import { searchUserAction, updateBalanceAction, toggleVipAction, getTopUsersAction, resetUserPasswordAction } from "../../actions/admin";
 
 export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,6 +12,7 @@ export default function AdminPanel() {
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState<"ADD" | "SUB" | "SET">("ADD");
   const [message, setMessage] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [topUsers, setTopUsers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -38,14 +39,15 @@ export default function AdminPanel() {
     let finalAmount = Number(amount);
     if (mode === "SUB") finalAmount = -Math.abs(finalAmount);
     
-    // Si quisieran setear tendría que ser diferente ruta, pero usaremos Add o Sub
-    
     const res = await updateBalanceAction(selectedUser.email, finalAmount);
     if (res.error) setMessage("❌ " + res.error);
     else {
       setMessage("✅ Saldo actualizado. Nuevo saldo: $" + (res.balance?.toFixed(2) || "0.00"));
-      setSelectedUser({ ...selectedUser, balance: res.balance });
+      setSelectedUser({ ...selectedUser, balance: res.balance, totalDeposited: (selectedUser.totalDeposited || 0) + (finalAmount > 0 ? finalAmount : 0) });
       setAmount("");
+      // Refresh top users to reflect changes
+      const topRes = await getTopUsersAction();
+      if (topRes.users) setTopUsers(topRes.users);
     }
   };
 
@@ -98,7 +100,7 @@ export default function AdminPanel() {
                         onClick={() => setSelectedUser(user)}
                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedUser?.id === user.id ? 'bg-red-50 border-red-300' : 'bg-slate-50 border-slate-200 hover:border-red-200'}`}
                      >
-                        <p className="font-bold flex items-center gap-1">
+                        <p className="font-bold flex items-center gap-1 text-slate-900 dark:text-white">
                            {user.name} 
                            {user.role === "ADMIN" && <span title="Admin">👑</span>}
                            {user.isVip && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
@@ -122,7 +124,7 @@ export default function AdminPanel() {
                       <div>
                         <div className="flex justify-between items-start">
                            <div>
-                              <h3 className="font-bold text-xl flex items-center gap-2">
+                              <h3 className="font-bold text-xl flex items-center gap-2 text-slate-900 dark:text-white">
                                  {selectedUser.name}
                                  {selectedUser.isVip && <Star size={18} className="text-yellow-500 fill-yellow-500" />}
                               </h3>
@@ -139,18 +141,18 @@ export default function AdminPanel() {
                         </div>
                         
                         <div className="mt-4 p-4 bg-slate-100 dark:bg-slate-800 rounded flex gap-4 items-center">
-                           <span>Saldo Actual:</span>
+                           <span className="text-slate-600 dark:text-slate-400">Saldo Actual:</span>
                            <span className="text-xl font-bold font-mono text-green-600 flex-1">${selectedUser.balance.toFixed(2)}</span>
                            
-                           {selectedUser.isVip && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">Compra sin comisión (Costo Real)</span>}
+                           {selectedUser.isVip && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold">Compra sin comisión</span>}
                         </div>
                       </div>
 
                       <div>
-                         <label className="block font-bold mt-6 mb-2">Acción de Saldo</label>
+                         <label className="block font-bold mt-6 mb-2 text-slate-700 dark:text-slate-300 text-sm">Acción de Saldo</label>
                          <div className="flex gap-2 mb-4">
-                            <button type="button" onClick={() => setMode("ADD")} className={`flex-1 py-2 rounded font-bold border ${mode === "ADD" ? "bg-green-100 text-green-700 border-green-300" : "bg-slate-50 text-slate-500"}`}>Añadir (+)</button>
-                            <button type="button" onClick={() => setMode("SUB")} className={`flex-1 py-2 rounded font-bold border ${mode === "SUB" ? "bg-red-100 text-red-700 border-red-300" : "bg-slate-50 text-slate-500"}`}>Quitar (-)</button>
+                            <button type="button" onClick={() => setMode("ADD")} className={`flex-1 py-2 rounded font-bold border ${mode === "ADD" ? "bg-green-100 text-green-700 border-green-300" : "bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"}`}>Añadir (+)</button>
+                            <button type="button" onClick={() => setMode("SUB")} className={`flex-1 py-2 rounded font-bold border ${mode === "SUB" ? "bg-red-100 text-red-700 border-red-300" : "bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"}`}>Quitar (-)</button>
                          </div>
                          
                          <input 
@@ -160,7 +162,7 @@ export default function AdminPanel() {
                            required
                            value={amount}
                            onChange={(e) => setAmount(e.target.value)}
-                           className="w-full px-3 py-3 rounded-lg border border-slate-300 bg-slate-50 font-mono text-lg"
+                           className="w-full px-3 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono text-lg text-slate-900 dark:text-white"
                            placeholder="Ej: 50.00"
                          />
                       </div>
@@ -169,15 +171,54 @@ export default function AdminPanel() {
                          {mode === "ADD" ? "Sumar Dinero" : "Restar Dinero"}
                       </button>
 
-                      {message && <div className="p-3 text-center rounded bg-slate-100 font-bold">{message}</div>}
+                      {message && <div className="p-3 text-center rounded bg-slate-100 dark:bg-slate-800 font-bold mt-4 text-slate-700 dark:text-slate-300">{message}</div>}
                    </form>
+
+                   {/* Historial acumulado y seguridad */}
+                   <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 space-y-6">
+                      <div className="flex justify-between items-center text-sm">
+                         <span className="text-slate-500 font-bold uppercase tracking-tight">Depósito Histórico Total:</span>
+                         <span className="font-black text-green-600 dark:text-green-400 font-mono text-lg">
+                            ${selectedUser.totalDeposited?.toFixed(2) || "0.00"}
+                         </span>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-4">
+                         <h4 className="flex items-center gap-2 font-black text-slate-700 dark:text-slate-300 text-xs tracking-widest uppercase">
+                            <Lock size={14} className="text-slate-400" /> Seguridad
+                         </h4>
+                         <div className="space-y-2">
+                            <input 
+                               type="text"
+                               value={newPassword}
+                               onChange={(e) => setNewPassword(e.target.value)}
+                               className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white"
+                               placeholder="Nueva contraseña..."
+                            />
+                            <button 
+                               onClick={async () => {
+                                  if(!window.confirm("¿Restablecer contraseña de este usuario?")) return;
+                                  const res = await resetUserPasswordAction(selectedUser.email, newPassword);
+                                  if (res.error) alert("Error: " + res.error);
+                                  else {
+                                     alert("✅ Contraseña actualizada con éxito");
+                                     setNewPassword("");
+                                  }
+                                }}
+                               className="w-full bg-slate-800 dark:bg-slate-700 text-white py-2 rounded-lg text-[10px] font-black tracking-widest uppercase hover:bg-black dark:hover:bg-slate-600 transition-colors"
+                            >
+                               RESTABLECER CONTRASEÑA
+                            </button>
+                         </div>
+                      </div>
+                   </div>
 
                    {selectedUser.orders && selectedUser.orders.length > 0 && (
                       <div className="mt-8 border-t pt-6">
-                         <h4 className="font-bold mb-4 flex items-center gap-2">Últimos Movimientos <span className="bg-slate-200 text-slate-700 px-2 rounded-full text-xs">{selectedUser.orders.length}</span></h4>
-                         <div className="overflow-x-auto max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
-                            <table className="w-full text-left text-sm text-slate-600">
-                               <thead className="sticky top-0 bg-slate-50 border-b">
+                         <h4 className="font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-slate-200 text-sm">Últimos Movimientos <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 rounded-full text-xs">{selectedUser.orders.length}</span></h4>
+                         <div className="overflow-x-auto max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-lg">
+                            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+                               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
                                   <tr>
                                      <th className="p-3">Fecha</th>
                                      <th className="p-3">Servicio</th>
@@ -185,22 +226,22 @@ export default function AdminPanel() {
                                      <th className="p-3 text-right">Estado</th>
                                   </tr>
                                </thead>
-                               <tbody className="divide-y">
+                               <tbody className="divide-y dark:divide-slate-800">
                                   {selectedUser.orders.map((order: any) => {
                                      const isBalSys = order.top4smmOrderId === "SYSTEM_BAL";
                                      return (
-                                        <tr key={order.id} className="hover:bg-slate-50 transition">
+                                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                                            <td className="p-3 whitespace-nowrap text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</td>
                                            <td className="p-3 max-w-[200px] truncate" title={order.serviceName}>
                                               {isBalSys ? "🏦 " : "⚡ "}{order.serviceName}
                                            </td>
                                            <td className="p-3 font-mono font-bold">
-                                              <span className={order.charge > 0 && isBalSys ? 'bg-green-100 text-green-700 px-2 py-1 rounded' : 'bg-slate-100 text-slate-700 px-2 py-1 rounded'}>
+                                              <span className={order.charge > 0 && isBalSys ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2 py-1 rounded' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 px-2 py-1 rounded'}>
                                                  {isBalSys && order.charge > 0 ? '+' : ''}{!isBalSys ? '-' : ''}{order.charge}$
                                               </span>
                                            </td>
                                            <td className="p-3 text-right">
-                                              <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${order.status === 'Completed' ? 'bg-green-100 text-green-700' : order.status === 'Canceled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                              <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${order.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : order.status === 'Canceled' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
                                                 {order.status}
                                               </span>
                                            </td>
@@ -225,7 +266,7 @@ export default function AdminPanel() {
               </div>
               <div>
                  <h2 className="text-2xl font-black text-slate-800 dark:text-white">Ranking de Clientes Top 10</h2>
-                 <p className="text-slate-500 dark:text-slate-400 text-sm font-medium transition-colors">Los usuarios más valiosos según saldo acumulado y volumen de pedidos.</p>
+                 <p className="text-slate-500 dark:text-slate-400 text-sm font-medium transition-colors">Análisis de valor acumulado y métricas de pedidos.</p>
               </div>
            </div>
 
@@ -235,7 +276,8 @@ export default function AdminPanel() {
                     <tr className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                        <th className="px-4 py-4 text-center">Rank</th>
                        <th className="px-4 py-4">Cliente</th>
-                       <th className="px-4 py-4">Créditos</th>
+                       <th className="px-4 py-4">S. Actual</th>
+                       <th className="px-4 py-4">Inversión Total</th>
                        <th className="px-4 py-4 text-center">Pedidos</th>
                        <th className="px-4 py-4 text-right">Acción</th>
                     </tr>
@@ -258,7 +300,7 @@ export default function AdminPanel() {
                           <td className="px-4 py-5">
                              <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-blue-600">
-                                   {user.name[0]}
+                                   {user.name && user.name.length > 0 ? user.name[0] : '?'}
                                 </div>
                                 <div>
                                    <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1">
@@ -270,10 +312,13 @@ export default function AdminPanel() {
                              </div>
                           </td>
                           <td className="px-4 py-5">
-                             <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-black font-mono">
-                                <Wallet size={14} />
+                             <div className="flex items-center gap-2 text-slate-900 dark:text-white font-black font-mono">
+                                <Wallet size={14} className="text-slate-400" />
                                 ${user.balance.toFixed(2)}
                              </div>
+                          </td>
+                          <td className="px-4 py-5 font-black text-green-600 dark:text-green-400">
+                             ${user.totalDeposited?.toFixed(2) || "0.00"}
                           </td>
                           <td className="px-4 py-5 text-center">
                              <div className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-xs font-black text-slate-600 dark:text-slate-400">
