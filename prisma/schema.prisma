@@ -19,6 +19,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   orders    Order[]
+  tickets   Ticket[]
 }
 
 model Order {
@@ -37,4 +38,25 @@ model Order {
   remains        Int?     @default(0) // Cantidad restante
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Ticket {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  subject   String
+  status    String    @default("Open") // Open, Resolved, Unresolved, Pending
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  senderId   String   // ID del que envía
+  senderName String   // Nombre para mostrar
+  text       String
+  createdAt  DateTime @default(now())
 }

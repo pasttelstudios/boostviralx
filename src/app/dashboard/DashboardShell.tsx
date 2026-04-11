@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Menu, X, Wallet, LogOut, LayoutDashboard, ShoppingCart, ShieldAlert } from "lucide-react";
+import { Menu, X, Wallet, LogOut, LayoutDashboard, ShoppingCart, ShieldAlert, MessageCircle, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SidebarNav from "./SidebarNav";
@@ -89,7 +89,9 @@ export default function DashboardShell({
               <h1 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white truncate">
                 {pathname === "/dashboard" ? "Nueva Orden" : 
                  pathname === "/dashboard/orders" ? "Mis Pedidos" : 
-                 pathname === "/dashboard/add-funds" ? "Fondos" : "Dashboard"}
+                 pathname === "/dashboard/add-funds" ? "Fondos" : 
+                 pathname === "/dashboard/support" ? "Soporte Técnico" : 
+                 pathname === "/dashboard/profile" ? "Mi Cuenta" : "Dashboard"}
               </h1>
            </div>
 
@@ -100,9 +102,13 @@ export default function DashboardShell({
               
               <BalanceDisplay initialBalance={initialBalance} variant="header" />
 
-              <div title={userName} className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center font-bold text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800">
+              <Link 
+                href="/dashboard/profile" 
+                title={userName} 
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center font-bold text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800 hover:scale-105 transition-all shadow-sm"
+              >
                  {userName.charAt(0).toUpperCase()}
-              </div>
+              </Link>
            </div>
         </header>
 

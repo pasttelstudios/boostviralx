@@ -64,7 +64,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10">
+    <div className="max-w-7xl mx-auto py-10">
        <div className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow border border-red-200 dark:border-red-800/50 p-8">
           <div className="flex items-center gap-4 mb-4">
             <ShieldAlert size={32} className="text-red-600" />
